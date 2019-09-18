@@ -123,9 +123,10 @@ Tynogels is a hard subset of Dynogels, and doesn't implement all the functionali
   - `User.query("Bob").where("age").between(20, 35).exec()`
   - `User.query("Bob").where("age").gte(20).exec()`
 
-Pull requests welcome :)
-
 ## Maintainers
 
 - [Michael Poteat](https://github.com/poteat) \<me@mpote.at\>
-- ... you?
+
+## License
+
+See the [Apache 2.0 permissive license](license.md).
