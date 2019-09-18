@@ -49,11 +49,11 @@ import tynogels from "tynogels";
 import t from "io-ts";
 
 tynogels.config({
-  region: "us-east-1",
+  region: "us-east-1"
 });
 
 const User = tynogels.define({
-  tableName: "users"
+  tableName: "users",
   hashKey: {
     name: t.string
   },
