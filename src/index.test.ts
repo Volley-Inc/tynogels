@@ -20,7 +20,7 @@ import aws from "aws-sdk";
 
 import tynogels from "./index";
 
-const shouldLog = false;
+const shouldLog = true;
 
 aws.config.update({
   accessKeyId: "YOURKEY",

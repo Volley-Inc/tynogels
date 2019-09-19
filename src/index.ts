@@ -15,6 +15,7 @@
 import * as t from "io-ts";
 import aws from "aws-sdk";
 import _ from "lodash";
+import { Y } from "variadic-y";
 
 const region = "us-east-1";
 let doc = new aws.DynamoDB.DocumentClient({ region });
@@ -201,21 +202,29 @@ export default {
               exec: async (): Promise<
                 (t.TypeOf<typeof keyType> & t.TypeOf<typeof type>)[]
               > =>
-                (await doc
-                  .query({
-                    TableName: config.tableName,
-                    KeyConditionExpression: `#x = :x and #y between :y and :z`,
-                    ExpressionAttributeNames: {
-                      "#x": _.keys(config.hashKey)[0],
-                      "#y": String(sortKey)
-                    },
-                    ExpressionAttributeValues: {
-                      ":x": hashValue,
-                      ":y": val1,
-                      ":z": val2
-                    }
-                  })
-                  .promise()).Items as any
+                Y(f => (lastKey?) =>
+                  (async x =>
+                    (await x).LastEvaluatedKey
+                      ? [...(await x).Items, ...f((await x).LastEvaluatedKey)]
+                      : (await x).Items)(
+                    doc
+                      .query({
+                        TableName: config.tableName,
+                        ExclusiveStartKey: lastKey,
+                        KeyConditionExpression: `#x = :x and #y between :y and :z`,
+                        ExpressionAttributeNames: {
+                          "#x": _.keys(config.hashKey)[0],
+                          "#y": String(sortKey)
+                        },
+                        ExpressionAttributeValues: {
+                          ":x": hashValue,
+                          ":y": val1,
+                          ":z": val2
+                        }
+                      })
+                      .promise()
+                  )
+                )() as any
             })
           }))(
             (operand: string) => (
