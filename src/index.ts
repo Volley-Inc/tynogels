@@ -15,7 +15,11 @@
 import * as t from "io-ts";
 import aws from "aws-sdk";
 import _ from "lodash";
+
 import { Y } from "variadic-y";
+
+// const Y = a =>
+//   (b => a(async c => (await b(b))(c)))(b => a(async c => (await b(b))(c)));
 
 const region = "us-east-1";
 let doc = new aws.DynamoDB.DocumentClient({ region });
@@ -201,16 +205,20 @@ export default {
             ) => ({
               exec: async (): Promise<
                 (t.TypeOf<typeof keyType> & t.TypeOf<typeof type>)[]
-              > =>
-                Y(f => (lastKey?) =>
+              > => {
+                return (await Y(async f => (lastKey?) =>
                   (async x =>
                     (await x).LastEvaluatedKey
-                      ? [...(await x).Items, ...f((await x).LastEvaluatedKey)]
+                      ? [
+                          ...(await x).Items,
+                          ...(await f((await x).LastEvaluatedKey))
+                        ]
                       : (await x).Items)(
                     doc
                       .query({
                         TableName: config.tableName,
                         ExclusiveStartKey: lastKey,
+                        Limit: 500,
                         KeyConditionExpression: `#x = :x and #y between :y and :z`,
                         ExpressionAttributeNames: {
                           "#x": _.keys(config.hashKey)[0],
@@ -224,7 +232,8 @@ export default {
                       })
                       .promise()
                   )
-                )() as any
+                ))() as any;
+              }
             })
           }))(
             (operand: string) => (

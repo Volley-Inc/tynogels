@@ -20,7 +20,7 @@ import aws from "aws-sdk";
 
 import tynogels from "./index";
 
-const shouldLog = true;
+const shouldLog = false;
 
 aws.config.update({
   accessKeyId: "YOURKEY",
@@ -127,7 +127,8 @@ ddb
   .createTable({
     TableName: "Movies",
     KeySchema: [
-      { AttributeName: "year", KeyType: "HASH" } //Partition key
+      { AttributeName: "year", KeyType: "HASH" }, //Partition key
+      { AttributeName: "filmCode", KeyType: "RANGE" }
     ],
     AttributeDefinitions: [
       { AttributeName: "year", AttributeType: "N" },
@@ -381,7 +382,9 @@ const Movie = tynogels.define({
   hashKey: {
     year: t.number
   },
-  sortKey: {},
+  sortKey: {
+    filmCode: t.number
+  },
   schema: {
     year: t.number,
     filmCode: t.number
@@ -405,6 +408,10 @@ it("Create movies for later testing", async () => {
   await Movie.create({ year: 2000, filmCode: 20 });
   await Movie.create({ year: 3000, filmCode: 30 });
   await Movie.create({ year: 4000, filmCode: 40 });
+
+  await Promise.all(
+    _.times(600, x => Movie.create({ year: 0, filmCode: x + 1 }))
+  );
 });
 
 it("Read movie based on GSI", async () => {
@@ -414,6 +421,17 @@ it("Read movie based on GSI", async () => {
 
   if (shouldLog) {
     console.log(movie);
+  }
+});
+
+it("Perform large query using between operator", async () => {
+  const movies = await Movie.query(0)
+    .where("filmCode")
+    .between(0, 1000)
+    .exec();
+
+  if (shouldLog) {
+    console.log(movies);
   }
 });
 
