@@ -15,14 +15,24 @@
 import * as t from "io-ts";
 import aws from "aws-sdk";
 import _ from "lodash";
+import https from "https";
 
 import { Y } from "variadic-y";
 
-// const Y = a =>
-//   (b => a(async c => (await b(b))(c)))(b => a(async c => (await b(b))(c)));
+const agent = new https.Agent({
+  rejectUnauthorized: true,
+  keepAlive: true,
+  ciphers: "ALL",
+  secureProtocol: "TLSv1_method"
+});
 
 const region = "us-east-1";
-let doc = new aws.DynamoDB.DocumentClient({ region });
+let doc = new aws.DynamoDB.DocumentClient({
+  region,
+  httpOptions: {
+    agent
+  }
+});
 
 const filt = <
   T1 extends {},
