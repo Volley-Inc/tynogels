@@ -177,7 +177,6 @@ export default {
                 .query({
                   TableName: config.tableName,
                   ExclusiveStartKey: lastKey,
-                  Limit: 500,
                   KeyConditionExpression: `#x = :x`,
                   ExpressionAttributeNames: {
                     "#x": _.keys(config.hashKey)[0]
@@ -237,7 +236,6 @@ export default {
                       .query({
                         TableName: config.tableName,
                         ExclusiveStartKey: lastKey,
-                        Limit: 500,
                         KeyConditionExpression: `#x = :x and #y between :y and :z`,
                         ExpressionAttributeNames: {
                           "#x": _.keys(config.hashKey)[0],
