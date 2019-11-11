@@ -168,18 +168,27 @@ export default {
         exec: async (): Promise<
           (t.TypeOf<typeof keyType> & t.TypeOf<typeof type>)[]
         > =>
-          (await doc
-            .query({
-              TableName: config.tableName,
-              KeyConditionExpression: `#x = :x`,
-              ExpressionAttributeNames: {
-                "#x": _.keys(config.hashKey)[0]
-              },
-              ExpressionAttributeValues: {
-                ":x": hashValue
-              }
-            })
-            .promise()).Items as any,
+          (await Y(async f => (lastKey?) =>
+            (async x =>
+              (await x).LastEvaluatedKey
+                ? [...(await x).Items, ...(await f((await x).LastEvaluatedKey))]
+                : (await x).Items)(
+              doc
+                .query({
+                  TableName: config.tableName,
+                  ExclusiveStartKey: lastKey,
+                  Limit: 500,
+                  KeyConditionExpression: `#x = :x`,
+                  ExpressionAttributeNames: {
+                    "#x": _.keys(config.hashKey)[0]
+                  },
+                  ExpressionAttributeValues: {
+                    ":x": hashValue
+                  }
+                })
+                .promise()
+            )
+          ))() as any,
         where: (sortKey: keyof t.TypeOf<typeof sortType>) =>
           (compBuilder => ({
             equals: compBuilder("="),
@@ -215,8 +224,8 @@ export default {
             ) => ({
               exec: async (): Promise<
                 (t.TypeOf<typeof keyType> & t.TypeOf<typeof type>)[]
-              > => {
-                return (await Y(async f => (lastKey?) =>
+              > =>
+                (await Y(async f => (lastKey?) =>
                   (async x =>
                     (await x).LastEvaluatedKey
                       ? [
@@ -242,8 +251,7 @@ export default {
                       })
                       .promise()
                   )
-                ))() as any;
-              }
+                ))() as any
             })
           }))(
             (operand: string) => (
