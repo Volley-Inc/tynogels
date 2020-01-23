@@ -130,17 +130,20 @@ export default {
       batchRead: async (
         x: t.TypeOf<typeof keyType>[]
       ): Promise<(t.TypeOf<typeof keyType> & t.TypeOf<typeof type>)[]> =>
-        (await Promise.all(
-          _.chunk(x, 25).map(x =>
-            doc
-              .batchGet({
-                RequestItems: {
-                  [config.tableName]: { Keys: x }
-                }
-              })
-              .promise()
-          )
-        )).flatMap(x => x.Responses[config.tableName]) as any,
+        _.flatMap(
+          await Promise.all(
+            _.chunk(x, 25).map(x =>
+              doc
+                .batchGet({
+                  RequestItems: {
+                    [config.tableName]: { Keys: x }
+                  }
+                })
+                .promise()
+            )
+          ),
+          x => x.Responses[config.tableName]
+        ) as any,
       update: async (x: t.TypeOf<typeof type> & t.TypeOf<typeof keyType>) =>
         doc
           .update(
